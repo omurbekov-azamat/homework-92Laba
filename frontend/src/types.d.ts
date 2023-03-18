@@ -34,3 +34,8 @@ export interface User {
     token: string;
     role: string;
 }
+
+export interface LoginMutation {
+    username: string;
+    password: string;
+}
