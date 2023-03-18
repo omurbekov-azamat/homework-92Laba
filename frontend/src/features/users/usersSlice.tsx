@@ -1,6 +1,6 @@
 import {createSlice} from "@reduxjs/toolkit";
 import {RootState} from "../../app/store";
-import {register, googleLogin, login} from "./usersThunks";
+import {register, googleLogin, login, logout} from "./usersThunks";
 import {GlobalError, User, ValidationError} from "../../types";
 
 interface UsersState {
@@ -11,6 +11,7 @@ interface UsersState {
     userTakenError: GlobalError | null;
     loginLoading: boolean;
     loginError: GlobalError | null;
+    logoutLoading: boolean;
 }
 
 const initialState: UsersState = {
@@ -21,16 +22,13 @@ const initialState: UsersState = {
     userTakenError: null,
     loginLoading: false,
     loginError: null,
+    logoutLoading: false,
 }
 
 export const usersSlice = createSlice({
     name: 'users',
     initialState,
-    reducers: {
-        closeModal: (state) => {
-            state.modalState = false;
-        }
-    },
+    reducers: {},
     extraReducers: (builder) => {
         builder.addCase(register.pending, (state) => {
             state.registerError = null;
@@ -75,12 +73,21 @@ export const usersSlice = createSlice({
             state.loginLoading = false;
             state.loginError = error || null;
         });
+        builder.addCase(logout.pending, (state) => {
+            state.user = null;
+            state.logoutLoading = true;
+        });
+        builder.addCase(logout.fulfilled, (state) => {
+            state.logoutLoading = false;
+        });
+        builder.addCase(logout.rejected, (state) => {
+            state.logoutLoading = false;
+        });
     }
 });
 
 export const usersReducer = usersSlice.reducer;
 
-export const {closeModal} = usersSlice.actions;
 export const selectModal = (state: RootState) => state.users.modalState;
 export const selectUser = (state: RootState) => state.users.user;
 export const selectRegisterLoading = (state: RootState) => state.users.registerLoading;
@@ -88,3 +95,4 @@ export const selectRegisterError = (state: RootState) => state.users.registerErr
 export const selectUserTakenError = (state: RootState) => state.users.userTakenError;
 export const selectLoginLoading = (state: RootState) => state.users.loginLoading;
 export const selectLoginError = (state: RootState) => state.users.loginError;
+export const selectLogoutLoading = (state: RootState) => state.users.logoutLoading;
