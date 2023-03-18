@@ -1,5 +1,5 @@
 import React, {useState} from 'react';
-import {Link as RouterLink, useNavigate} from 'react-router-dom';
+import {Link as RouterLink} from 'react-router-dom';
 import {useAppDispatch, useAppSelector} from "../../app/hook";
 import FileInput from "../../components/UI/FileInput/FileInput";
 import {Avatar, Box, Grid, TextField, Typography, Link} from '@mui/material';
@@ -8,13 +8,13 @@ import {LoadingButton} from "@mui/lab";
 import {RegisterMutation} from "../../types";
 import {selectRegisterError, selectRegisterLoading, selectUserTakenError} from "./usersSlice";
 import {register} from "./usersThunks";
+import LoginWithGoogle from "../../components/GoogleLogin/LoginWithGoogle";
 
 const Register = () => {
     const dispatch = useAppDispatch();
     const error = useAppSelector(selectRegisterError);
     const loading = useAppSelector(selectRegisterLoading);
     const userTakenError = useAppSelector(selectUserTakenError);
-    const navigate = useNavigate();
 
     const [state, setState] = useState<RegisterMutation>({
         username: '',
@@ -72,6 +72,7 @@ const Register = () => {
                 <Typography component="h1" variant="h5">
                     Sign up
                 </Typography>
+                <LoginWithGoogle/>
                 <Box component="form" noValidate onSubmit={submitFormHandler} sx={{mt: 3}}>
                     <Grid container spacing={2} textAlign='center'>
                         <Grid item xs={12}>
