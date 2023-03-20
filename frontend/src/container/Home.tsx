@@ -3,12 +3,13 @@ import {useNavigate} from "react-router-dom";
 import {useAppDispatch, useAppSelector} from "../app/hook";
 import {
     catchLoginError, catchRegisterError,
-    register, selectToken,
+    register, selectToken, selectUser,
     selectUserLoginMutation,
     selectUserRegisterMutation
 } from "../features/users/usersSlice";
 import AppToolbar from "../components/UI/AppToolbar/AppToolbar";
 import ModalCover from "../components/UI/ModalCover/ModalCover";
+import Chat from '../container/Chat'
 import {IncomingMessage, Online, User, ValidationError} from "../types";
 
 const Home = () => {
@@ -17,6 +18,7 @@ const Home = () => {
     const loginState = useAppSelector(selectUserLoginMutation);
     const token = useAppSelector(selectToken);
     const navigate = useNavigate();
+    const user = useAppSelector(selectUser)
 
     const [state, setState] = useState<Online[]>([]);
     const ws = useRef<null | WebSocket>(null);
@@ -114,6 +116,7 @@ const Home = () => {
         <>
             <AppToolbar/>
             <ModalCover/>
+            {user && <Chat userOnline={state}/>}
         </>
 
     );
