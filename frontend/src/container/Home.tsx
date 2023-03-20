@@ -10,7 +10,7 @@ import {
 import AppToolbar from "../components/UI/AppToolbar/AppToolbar";
 import ModalCover from "../components/UI/ModalCover/ModalCover";
 import Chat from '../container/Chat'
-import {IncomingMessage, Online, User, ValidationError} from "../types";
+import {IncomingMessage, Message, Online, User, ValidationError} from "../types";
 
 const Home = () => {
     const dispatch = useAppDispatch();
@@ -18,9 +18,10 @@ const Home = () => {
     const loginState = useAppSelector(selectUserLoginMutation);
     const token = useAppSelector(selectToken);
     const navigate = useNavigate();
-    const user = useAppSelector(selectUser)
+    const user = useAppSelector(selectUser);
 
     const [state, setState] = useState<Online[]>([]);
+    const [messages, setMessages] = useState<Message[]>([]);
     const ws = useRef<null | WebSocket>(null);
 
     useEffect(() => {
@@ -33,40 +34,37 @@ const Home = () => {
         ws.current.onmessage = (event) => {
             const decodedMessage = JSON.parse(event.data) as IncomingMessage;
             if (decodedMessage.type === 'NEW_USER' || decodedMessage.type === 'USERNAME_PASSWORD CORRECT') {
-                if (decodedMessage.payload.message === 'Successfully!') {
-                    const responseRegister = decodedMessage.payload.data as User;
-                    dispatch(register(responseRegister));
-                    if (responseRegister) {
-                        if (!ws.current) return;
+                const responseRegister = decodedMessage.payload as User;
+                dispatch(register(responseRegister));
+                if (responseRegister) {
+                    if (!ws.current) return;
 
-                        ws.current.send(JSON.stringify({
-                            type: 'LOGIN',
-                            payload: {
-                                message: 'login',
-                                data: responseRegister.token,
-                            }
-                        }));
-                    }
-                    navigate('/');
+                    ws.current.send(JSON.stringify({
+                        type: 'LOGIN',
+                        payload: responseRegister.token,
+                    }));
                 }
+                navigate('/');
             }
             if (decodedMessage.type === 'VALIDATION_ERROR') {
-                if (decodedMessage.payload.data.hasOwnProperty('errors')) {
-                    const responseError = decodedMessage.payload.data as ValidationError;
-                    dispatch(catchRegisterError(responseError));
-                }
+                const responseError = decodedMessage.payload as ValidationError;
+                dispatch(catchRegisterError(responseError));
             }
             if (decodedMessage.type === 'USERNAME_NOT_FOUND' || decodedMessage.type === 'PASSWORD_IS_WRONG') {
-                if (decodedMessage.payload.message === 'Something wrong!') {
-                    const response = decodedMessage.payload.data as string;
-                    dispatch(catchLoginError(response));
-                }
+                const response = decodedMessage.payload as string;
+                dispatch(catchLoginError(response));
             }
             if (decodedMessage.type === 'ONLINE') {
-                if (decodedMessage.payload.message === 'online') {
-                    const responseOnlineUser = decodedMessage.payload.data as Online[];
-                    setState(responseOnlineUser);
-                }
+                const users = decodedMessage.payload as Online[];
+                setState(users);
+            }
+            if (decodedMessage.type === 'EXISTING_MESSAGES') {
+                const messages = decodedMessage.payload as Message[];
+                setMessages(messages);
+            }
+            if (decodedMessage.type === 'SEND_MESSAGES') {
+                const messages = decodedMessage.payload as Message[];
+                setMessages(prev => (prev.concat(messages)));
             }
         }
 
@@ -83,20 +81,14 @@ const Home = () => {
 
             ws.current.send(JSON.stringify({
                 type: 'REGISTER',
-                payload: {
-                    message: 'sign_up',
-                    data: registerState,
-                },
+                payload: registerState,
             }));
         }
         if (loginState) {
             if (!ws.current) return;
             ws.current?.send(JSON.stringify({
                 type: 'SESSIONS',
-                payload: {
-                    message: 'sign_in',
-                    data: loginState,
-                },
+                payload: loginState,
             }));
         }
         if (token) {
@@ -104,19 +96,24 @@ const Home = () => {
 
             ws.current.send(JSON.stringify({
                 type: 'LOGOUT',
-                payload: {
-                    message: 'logout',
-                    data: token,
-                },
+                payload: token
             }));
         }
     }, [registerState, loginState, token]);
+
+    const onSubmit = (message: Message) => {
+        if (!ws.current) return;
+        ws.current.send(JSON.stringify({
+            type: 'SEND_MESSAGE',
+            payload: message,
+        }));
+    };
 
     return (
         <>
             <AppToolbar/>
             <ModalCover/>
-            {user && <Chat userOnline={state}/>}
+            {user && <Chat userOnline={state} onSubmit={onSubmit} id={user._id} displayName={user.displayName} messages={messages}/>}
         </>
 
     );

@@ -15,7 +15,8 @@ export interface ActiveConnections {
 }
 
 export interface UserMessage {
-    username: string;
+    _id: string;
+    displayName: string;
     message: string;
 }
 
@@ -26,8 +27,5 @@ export interface ISession {
 
 export interface IncomingMessage {
     type: string;
-    payload: {
-        message: string,
-        data:  IUser | UserMessage | ISession | string;
-    };
+    payload: IUser | UserMessage | ISession | string;
 }

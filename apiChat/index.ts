@@ -19,105 +19,85 @@ expressWs(app);
 const router = express.Router();
 const activeConnections: ActiveConnections = {};
 
-const messages: UserMessage[] = [];
+const messagesState: UserMessage[] = [];
 
 router.ws('/chat', (ws) => {
     const id = crypto.randomUUID();
     activeConnections[id] = ws;
     console.log('Client connected! id =', id);
 
-    ws.send(JSON.stringify({
-        type: 'EXISTING_MESSAGES',
-        payload: messages,
-    }));
-
     ws.on('message', async (messages) => {
         const decodeMessage = JSON.parse(messages.toString()) as IncomingMessage;
         const conn = activeConnections[id];
         switch (decodeMessage.type) {
             case 'REGISTER':
-                if (decodeMessage.payload.message === 'sign_up') {
-                    const register = decodeMessage.payload.data as IUser;
-                    try {
-                        const user = await User.create({
-                            username: register.username,
-                            password: register.password,
-                            displayName: register.displayName,
-                            token: crypto.randomUUID(),
-                        });
+                const register = decodeMessage.payload as IUser;
+                try {
+                    const user = await User.create({
+                        username: register.username,
+                        password: register.password,
+                        displayName: register.displayName,
+                        token: crypto.randomUUID(),
+                    });
+                    conn.send(JSON.stringify({
+                        type: 'NEW_USER',
+                        payload: user,
+                    }));
+                } catch (error) {
+                    if (error instanceof Error.ValidationError) {
                         conn.send(JSON.stringify({
-                            type: 'NEW_USER',
-                            payload: {
-                                message: 'Successfully!',
-                                data: user,
-                            },
+                            type: 'VALIDATION_ERROR',
+                            payload: error,
                         }));
-                    } catch (error) {
-                        if (error instanceof Error.ValidationError) {
-                            conn.send(JSON.stringify({
-                                type: 'VALIDATION_ERROR',
-                                payload: {
-                                    message: 'Validation error!',
-                                    data: error,
-                                },
-                            }));
-                        }
                     }
                 }
+
                 break;
             case 'SESSIONS':
-                if (decodeMessage.payload.message === 'sign_in') {
-                    const session = decodeMessage.payload.data as ISession;
-                    const user = await User.findOne({username: session.username});
-                    if (!user) {
+                const session = decodeMessage.payload as ISession;
+                const user = await User.findOne({username: session.username});
+                if (!user) {
+                    conn.send(JSON.stringify({
+                        type: 'USERNAME_NOT_FOUND',
+                        payload: 'Username is not found',
+                    }));
+                }
+
+                if (user) {
+                    const isMatch = await user.checkPassword(session.password);
+
+                    if (!isMatch) {
                         conn.send(JSON.stringify({
-                            type: 'USERNAME_NOT_FOUND',
+                            type: 'PASSWORD_IS_WRONG',
                             payload: {
                                 message: 'Something wrong!',
-                                data: 'Username is not found',
+                                data: 'Password is wrong',
                             },
                         }));
                     }
 
-                    if (user) {
-                        const isMatch = await user.checkPassword(session.password);
-
-                        if (!isMatch) {
-                            conn.send(JSON.stringify({
-                                type: 'PASSWORD_IS_WRONG',
-                                payload: {
-                                    message:'Something wrong!',
-                                    data: 'Password is wrong',
-                                },
-                            }));
-                        }
-
-                        if (isMatch) {
-                            user.generateToken();
-                            await user.save();
-                            conn.send(JSON.stringify({
-                                type: 'USERNAME_PASSWORD CORRECT',
-                                payload: {
-                                    message: 'Successfully!',
-                                    data: user,
-                                },
-                            }));
-                        }
+                    if (isMatch) {
+                        user.generateToken();
+                        await user.save();
+                        conn.send(JSON.stringify({
+                            type: 'USERNAME_PASSWORD CORRECT',
+                            payload: user,
+                        }));
                     }
                 }
                 break;
             case 'LOGOUT':
-                if (decodeMessage.payload.message === 'logout') {
-                    const token = decodeMessage.payload.data as string;
-                    const success = {message: 'OK'};
+                const token = decodeMessage.payload as string;
+                const success = {message: 'OK'};
 
-                    if (!token) {
-                        conn.send(JSON.stringify({
-                            type: 'OK',
-                            payload: success,
-                        }));
-                    }
+                if (!token) {
+                    conn.send(JSON.stringify({
+                        type: 'OK',
+                        payload: success,
+                    }));
+                }
 
+                if (token) {
                     const user = await User.findOne({token});
 
                     if (!user) {
@@ -138,15 +118,12 @@ router.ws('/chat', (ws) => {
 
                         const users = await User.find({online: true}).select('displayName');
 
-                        if (users){
+                        if (users) {
                             Object.keys(activeConnections).forEach(id => {
                                 const conn = activeConnections[id];
                                 conn.send(JSON.stringify({
                                     type: 'ONLINE',
-                                    payload: {
-                                        message: 'online',
-                                        data: users,
-                                    }
+                                    payload: users,
                                 }));
                             });
                         }
@@ -154,46 +131,34 @@ router.ws('/chat', (ws) => {
                 }
                 break;
             case 'LOGIN':
-                if (decodeMessage.payload.message === 'login') {
-                    const token = decodeMessage.payload.data;
+                const loginToken = decodeMessage.payload as string;
+                if (!loginToken) {
+                    conn.send(JSON.stringify({
+                        type: 'TOKEN',
+                        payload: 'No token!'
+                    }));
+                }
 
-                    if (!token) {
+                if (loginToken) {
+                    const user = await User.findOne({token: loginToken});
+
+                    if (!user) {
                         conn.send(JSON.stringify({
                             type: 'TOKEN',
-                            payload: {
-                                message: 'token',
-                                data: 'No token!'
-                            }
+                            payload: 'Wrong token!'
                         }));
                     }
 
-                    if (token) {
-                        const user = await User.findOne({token});
-
-                        if (!user) {
-                            conn.send(JSON.stringify({
-                                type: 'TOKEN',
-                                payload: {
-                                    message: 'token',
-                                    data: 'Wrong token!'
-                                }
-                            }));
-                        }
-
-                        if (user) {
-                            user.online = true;
-                            await user.save();
-                        }
+                    if (user) {
+                        user.online = true;
+                        await user.save();
 
                         const users = await User.find({online: true}).select('displayName');
 
                         if (!users) {
                             conn.send(JSON.stringify({
                                 type: 'ONLINE',
-                                payload: {
-                                    message: 'online',
-                                    data: 'There is on online users'
-                                },
+                                payload: 'There is on online users'
                             }));
                         }
 
@@ -202,15 +167,27 @@ router.ws('/chat', (ws) => {
                                 const conn = activeConnections[id];
                                 conn.send(JSON.stringify({
                                     type: 'ONLINE',
-                                    payload: {
-                                        message: 'online',
-                                        data: users,
-                                    }
+                                    payload: users,
+                                }));
+                                conn.send(JSON.stringify({
+                                    type: 'EXISTING_MESSAGES',
+                                    payload: messagesState,
                                 }));
                             });
                         }
                     }
                 }
+                break;
+            case 'SEND_MESSAGE':
+                const responseMessage = decodeMessage.payload as UserMessage;
+                messagesState.push(responseMessage);
+                Object.keys(activeConnections).forEach(id => {
+                    const conn = activeConnections[id];
+                    conn.send(JSON.stringify({
+                        type: 'SEND_MESSAGES',
+                        payload: [responseMessage]
+                    }));
+                });
                 break;
             default:
                 console.log('Unknown type', decodeMessage.type);

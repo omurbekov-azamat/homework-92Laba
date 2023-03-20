@@ -34,15 +34,16 @@ export interface LoginMutation {
     password: string;
 }
 
-export interface IncomingMessage {
-    type: string;
-    payload: {
-        message: string;
-        data: User | ValidationError | string | Online[];
-    }
-}
-
 export interface Online {
     _id: string;
     displayName: string
+}
+
+export interface Message extends Online {
+    message: string;
+}
+
+export interface IncomingMessage {
+    type: string;
+    payload: User | ValidationError | string | Online[]  | Message[];
 }
