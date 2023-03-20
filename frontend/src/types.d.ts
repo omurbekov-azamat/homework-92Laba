@@ -38,6 +38,11 @@ export interface IncomingMessage {
     type: string;
     payload: {
         message: string;
-        data: User | ValidationError | string;
+        data: User | ValidationError | string | Online[];
     }
+}
+
+export interface Online {
+    _id: string;
+    displayName: string
 }

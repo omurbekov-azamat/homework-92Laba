@@ -129,11 +129,86 @@ router.ws('/chat', (ws) => {
 
                     if (user) {
                         user.generateToken();
+                        user.online = false;
                         await user.save();
                         conn.send(JSON.stringify({
                             type: 'OK',
                             payload: success,
                         }));
+
+                        const users = await User.find({online: true}).select('displayName');
+
+                        if (users){
+                            Object.keys(activeConnections).forEach(id => {
+                                const conn = activeConnections[id];
+                                conn.send(JSON.stringify({
+                                    type: 'ONLINE',
+                                    payload: {
+                                        message: 'online',
+                                        data: users,
+                                    }
+                                }));
+                            });
+                        }
+                    }
+                }
+                break;
+            case 'LOGIN':
+                if (decodeMessage.payload.message === 'login') {
+                    const token = decodeMessage.payload.data;
+
+                    if (!token) {
+                        conn.send(JSON.stringify({
+                            type: 'TOKEN',
+                            payload: {
+                                message: 'token',
+                                data: 'No token!'
+                            }
+                        }));
+                    }
+
+                    if (token) {
+                        const user = await User.findOne({token});
+
+                        if (!user) {
+                            conn.send(JSON.stringify({
+                                type: 'TOKEN',
+                                payload: {
+                                    message: 'token',
+                                    data: 'Wrong token!'
+                                }
+                            }));
+                        }
+
+                        if (user) {
+                            user.online = true;
+                            await user.save();
+                        }
+
+                        const users = await User.find({online: true}).select('displayName');
+
+                        if (!users) {
+                            conn.send(JSON.stringify({
+                                type: 'ONLINE',
+                                payload: {
+                                    message: 'online',
+                                    data: 'There is on online users'
+                                },
+                            }));
+                        }
+
+                        if (users) {
+                            Object.keys(activeConnections).forEach(id => {
+                                const conn = activeConnections[id];
+                                conn.send(JSON.stringify({
+                                    type: 'ONLINE',
+                                    payload: {
+                                        message: 'online',
+                                        data: users,
+                                    }
+                                }));
+                            });
+                        }
                     }
                 }
                 break;

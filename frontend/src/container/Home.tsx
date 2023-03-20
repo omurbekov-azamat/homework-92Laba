@@ -1,4 +1,4 @@
-import React, {useEffect, useRef} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import {useNavigate} from "react-router-dom";
 import {useAppDispatch, useAppSelector} from "../app/hook";
 import {
@@ -9,15 +9,17 @@ import {
 } from "../features/users/usersSlice";
 import AppToolbar from "../components/UI/AppToolbar/AppToolbar";
 import ModalCover from "../components/UI/ModalCover/ModalCover";
-import {IncomingMessage, User, ValidationError} from "../types";
+import {IncomingMessage, Online, User, ValidationError} from "../types";
 
 const Home = () => {
     const dispatch = useAppDispatch();
-    const ws = useRef<null | WebSocket>(null);
     const registerState = useAppSelector(selectUserRegisterMutation);
     const loginState = useAppSelector(selectUserLoginMutation);
     const token = useAppSelector(selectToken);
     const navigate = useNavigate();
+
+    const [state, setState] = useState<Online[]>([]);
+    const ws = useRef<null | WebSocket>(null);
 
     useEffect(() => {
         ws.current = new WebSocket('ws://localhost:8000/chat');
@@ -32,6 +34,17 @@ const Home = () => {
                 if (decodedMessage.payload.message === 'Successfully!') {
                     const responseRegister = decodedMessage.payload.data as User;
                     dispatch(register(responseRegister));
+                    if (responseRegister) {
+                        if (!ws.current) return;
+
+                        ws.current.send(JSON.stringify({
+                            type: 'LOGIN',
+                            payload: {
+                                message: 'login',
+                                data: responseRegister.token,
+                            }
+                        }));
+                    }
                     navigate('/');
                 }
             }
@@ -45,6 +58,12 @@ const Home = () => {
                 if (decodedMessage.payload.message === 'Something wrong!') {
                     const response = decodedMessage.payload.data as string;
                     dispatch(catchLoginError(response));
+                }
+            }
+            if (decodedMessage.type === 'ONLINE') {
+                if (decodedMessage.payload.message === 'online') {
+                    const responseOnlineUser = decodedMessage.payload.data as Online[];
+                    setState(responseOnlineUser);
                 }
             }
         }

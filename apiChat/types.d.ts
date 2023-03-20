@@ -7,6 +7,7 @@ export interface IUser {
     role: string;
     displayName: string;
     googleId?: string;
+    online: boolean;
 }
 
 export interface ActiveConnections {
