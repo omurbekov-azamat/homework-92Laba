@@ -2,7 +2,6 @@ export interface RegisterMutation {
     username: string;
     password: string;
     displayName: string;
-    image: File | null;
 }
 
 export interface ValidationError {
@@ -17,10 +16,6 @@ export interface ValidationError {
     _name: string;
 }
 
-export type GlobalError = {
-    error: string;
-}
-
 export interface RegisterResponse {
     message: string;
     user: User;
@@ -30,7 +25,6 @@ export interface User {
     _id: string;
     username: string;
     displayName: string;
-    avatar: string | null;
     token: string;
     role: string;
 }
@@ -38,4 +32,12 @@ export interface User {
 export interface LoginMutation {
     username: string;
     password: string;
+}
+
+export interface IncomingMessage {
+    type: string;
+    payload: {
+        message: string;
+        data: User | ValidationError | string;
+    }
 }

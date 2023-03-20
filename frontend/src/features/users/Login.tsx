@@ -1,11 +1,10 @@
 import React, {useState} from 'react';
-import {Link as RouterLink, useNavigate} from 'react-router-dom';
-import {selectLoginError, selectLoginLoading} from "./usersSlice";
-import {login} from "./usersThunks";
+import {Link as RouterLink} from 'react-router-dom';
+import {useAppDispatch, useAppSelector} from "../../app/hook";
+import {loginState, selectLoginError, selectLoginLoading} from "./usersSlice";
 import {Avatar, Box, Container, Grid, Link, TextField, Typography} from '@mui/material';
 import LockOpenIcon from '@mui/icons-material/LockOpen';
 import Alert from '@mui/material/Alert'
-import {useAppDispatch, useAppSelector} from "../../app/hook";
 import {LoadingButton} from "@mui/lab";
 import LoginWithGoogle from "../../components/GoogleLogin/LoginWithGoogle";
 import {LoginMutation} from '../../types';
@@ -13,8 +12,7 @@ import {LoginMutation} from '../../types';
 const Login = () => {
     const dispatch = useAppDispatch();
     const error = useAppSelector(selectLoginError);
-    const loading = useAppSelector(selectLoginLoading)
-    const navigate = useNavigate();
+    const loading = useAppSelector(selectLoginLoading);
 
     const [state, setState] = useState<LoginMutation>({
         username: '',
@@ -28,8 +26,7 @@ const Login = () => {
 
     const submitFormHandler = async (event: React.FormEvent) => {
         event.preventDefault();
-        await dispatch(login(state)).unwrap();
-        await navigate('/chat');
+        await dispatch(loginState(state));
     };
 
     return (
@@ -51,7 +48,7 @@ const Login = () => {
                 <LoginWithGoogle/>
                 {error && (
                     <Alert severity="error" sx={{mt: 3, width: '100%'}}>
-                        {error.error}
+                        {error}
                     </Alert>
                 )}
                 <Box component="form" onSubmit={submitFormHandler} sx={{mt: 3}}>
@@ -79,9 +76,9 @@ const Login = () => {
                             <LoadingButton
                                 type='submit'
                                 color='primary'
-                                loading={loading}
                                 variant='contained'
                                 sx={{mb: 2}}
+                                loading={loading}
                             >
                                 Sign in
                             </LoadingButton>
@@ -89,7 +86,7 @@ const Login = () => {
                     </Grid>
                     <Grid container justifyContent="flex-end">
                         <Grid item>
-                            <Link component={RouterLink} to="/register" variant="body2">
+                            <Link component={RouterLink} to="/" variant="body2">
                                 Or sign up
                             </Link>
                         </Grid>

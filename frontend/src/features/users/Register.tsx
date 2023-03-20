@@ -1,26 +1,20 @@
 import React, {useState} from 'react';
-import {Link as RouterLink, useNavigate} from 'react-router-dom';
-import {selectRegisterError, selectRegisterLoading, selectUserTakenError} from "./usersSlice";
+import {Link as RouterLink} from 'react-router-dom';
+import {selectRegisterError, userState} from "./usersSlice";
 import {useAppDispatch, useAppSelector} from "../../app/hook";
-import FileInput from "../../components/UI/FileInput/FileInput";
-import {Avatar, Box, Grid, TextField, Typography, Link} from '@mui/material';
+import {Avatar, Box, Grid, TextField, Typography, Link, Button} from '@mui/material';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
-import {LoadingButton} from "@mui/lab";
-import {register} from "./usersThunks";
 import {RegisterMutation} from "../../types";
 
-const Register = () => {
+
+const Register= () => {
     const dispatch = useAppDispatch();
     const error = useAppSelector(selectRegisterError);
-    const loading = useAppSelector(selectRegisterLoading);
-    const userTakenError = useAppSelector(selectUserTakenError);
-    const navigate = useNavigate();
 
     const [state, setState] = useState<RegisterMutation>({
         username: '',
         password: '',
         displayName: '',
-        image: null,
     });
 
     const inputChangeHandler = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -28,25 +22,9 @@ const Register = () => {
         setState(prev => ({...prev, [name]: value}));
     };
 
-    const fileInputChangeHandler = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const {name, files} = e.target;
-        setState(prev => ({
-            ...prev, [name]: files && files[0] ? files[0] : null,
-        }));
-    };
-
     const submitFormHandler = async (event: React.FormEvent) => {
         event.preventDefault();
-        await dispatch(register(state)).unwrap();
-        await navigate('/chat');
-    };
-
-    const getTakenNameError = () => {
-        try {
-            return userTakenError?.error;
-        } catch {
-            return undefined;
-        }
+        dispatch(userState(state));
     };
 
     const getFieldError = (fieldName: string) => {
@@ -82,8 +60,8 @@ const Register = () => {
                                 autoComplete="new-username"
                                 value={state.username}
                                 onChange={inputChangeHandler}
-                                error={Boolean(getFieldError('username')) || Boolean(getTakenNameError())}
-                                helperText={getFieldError('username') || getTakenNameError()}
+                                error={Boolean(getFieldError('username'))}
+                                helperText={getFieldError('username')}
                             />
                         </Grid>
                         <Grid item xs={12}>
@@ -111,24 +89,14 @@ const Register = () => {
                             />
                         </Grid>
                         <Grid item xs={12}>
-                            <FileInput
-                                label='avatar'
-                                onChange={fileInputChangeHandler}
-                                name='image'
-                                type='images/*'
-                                error={error}
-                            />
-                        </Grid>
-                        <Grid item xs={12}>
-                            <LoadingButton
+                            <Button
                                 type='submit'
                                 color='secondary'
-                                loading={loading}
                                 variant='contained'
                                 sx={{mb: 2}}
                             >
                                 Sign Up
-                            </LoadingButton>
+                            </Button>
                         </Grid>
                     </Grid>
                     <Grid container justifyContent="flex-end">

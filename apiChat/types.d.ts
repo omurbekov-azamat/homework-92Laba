@@ -1,3 +1,5 @@
+import {WebSocket} from 'ws';
+
 export interface IUser {
     username: string;
     password: string;
@@ -5,5 +7,26 @@ export interface IUser {
     role: string;
     displayName: string;
     googleId?: string;
-    avatar: string | null;
+}
+
+export interface ActiveConnections {
+    [id: string]: WebSocket;
+}
+
+export interface UserMessage {
+    username: string;
+    message: string;
+}
+
+export interface ISession {
+    username: string;
+    password: string;
+}
+
+export interface IncomingMessage {
+    type: string;
+    payload: {
+        message: string,
+        data:  IUser | UserMessage | ISession | string;
+    };
 }

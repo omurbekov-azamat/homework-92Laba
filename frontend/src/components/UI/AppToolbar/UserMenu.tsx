@@ -1,25 +1,15 @@
 import React, {useState} from 'react';
-import {useNavigate} from "react-router-dom";
-import {logout} from "../../../features/users/usersThunks";
-import {selectLogoutLoading, selectUser} from "../../../features/users/usersSlice";
-import {useAppDispatch, useAppSelector} from "../../../app/hook";
+import {logout} from "../../../features/users/usersSlice";
+import {useAppDispatch} from "../../../app/hook";
 import {Avatar, Button, Grid, Menu, MenuItem} from '@mui/material';
-import {apiURL} from "../../../constants";
+import {User} from "../../../types";
 
-const UserMenu = () => {
+interface Props {
+    user: User;
+}
+
+const UserMenu: React.FC<Props> = ({user}) => {
     const dispatch = useAppDispatch();
-    const user = useAppSelector(selectUser)!;
-    const loading = useAppSelector(selectLogoutLoading);
-    const navigate = useNavigate();
-
-    let avatar = '';
-
-    if (user.avatar && user.avatar.length > 50) {
-        avatar = user.avatar;
-    }
-    if (user.avatar && user.avatar.length < 50) {
-        avatar = apiURL + '/' + user.avatar;
-    }
 
     const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
     const handleClick = (event: React.MouseEvent<HTMLElement>) => {
@@ -30,16 +20,15 @@ const UserMenu = () => {
         setAnchorEl(null);
     };
 
-    const handleLogout = async () => {
-        await dispatch(logout());
-        await navigate('/');
+    const handleLogout = async (token: string) => {
+        dispatch(logout(token)) ;
     };
 
     return (
         <>
             <Grid container>
                 <Grid item>
-                    <Avatar alt={user.displayName} src={avatar}/>
+                    <Avatar alt={user.displayName}/>
                 </Grid>
                 <Grid item>
                     <Button
@@ -56,7 +45,7 @@ const UserMenu = () => {
                 open={Boolean(anchorEl)}
                 onClose={handleClose}
             >
-                <MenuItem onClick={handleLogout} disabled={loading}>Logout</MenuItem>
+                <MenuItem onClick={() => handleLogout(user.token)}>Logout</MenuItem>
             </Menu>
         </>
     );
