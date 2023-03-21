@@ -10,7 +10,7 @@ import {
 import AppToolbar from "../components/UI/AppToolbar/AppToolbar";
 import ModalCover from "../components/UI/ModalCover/ModalCover";
 import Chat from '../container/Chat'
-import {IncomingMessage, Message, Online, User, ValidationError} from "../types";
+import {IncomingMessage, Message, MessageMutation, Online, User, ValidationError} from "../types";
 
 const Home = () => {
     const dispatch = useAppDispatch();
@@ -114,7 +114,7 @@ const Home = () => {
         }
     }, [registerState, loginState, token, googleUser]);
 
-    const onSubmit = (message: Message) => {
+    const onSubmit = (message: MessageMutation) => {
         if (!ws.current) return;
         ws.current.send(JSON.stringify({
             type: 'SEND_MESSAGE',

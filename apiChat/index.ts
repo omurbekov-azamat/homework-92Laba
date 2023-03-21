@@ -7,6 +7,7 @@ import usersRouter from "./routers/users";
 import expressWs from "express-ws";
 import User from "./modules/User";
 import {ActiveConnections, IncomingMessage, ISession, IUser, UserMessage} from "./types";
+import Message from "./modules/Message";
 
 const app = express();
 const port = 8000;
@@ -18,8 +19,7 @@ app.use('/users', usersRouter);
 expressWs(app);
 const router = express.Router();
 const activeConnections: ActiveConnections = {};
-
-let messagesState: UserMessage[] = [];
+const db = mongoose.connection;
 
 router.ws('/chat', (ws) => {
     const id = crypto.randomUUID();
@@ -51,7 +51,6 @@ router.ws('/chat', (ws) => {
                         }));
                     }
                 }
-
                 break;
             case 'SESSIONS':
                 const session = decodeMessage.payload as ISession;
@@ -163,6 +162,7 @@ router.ws('/chat', (ws) => {
                         }
 
                         if (users) {
+                            const messagesData = await Message.find().populate({path: 'user', select: 'displayName'}).limit(30);
                             Object.keys(activeConnections).forEach(id => {
                                 const conn = activeConnections[id];
                                 conn.send(JSON.stringify({
@@ -171,7 +171,7 @@ router.ws('/chat', (ws) => {
                                 }));
                                 conn.send(JSON.stringify({
                                     type: 'EXISTING_MESSAGES',
-                                    payload: messagesState,
+                                    payload: messagesData,
                                 }));
                             });
                         }
@@ -180,22 +180,28 @@ router.ws('/chat', (ws) => {
                 break;
             case 'SEND_MESSAGE':
                 const responseMessage = decodeMessage.payload as UserMessage;
-                messagesState.push(responseMessage);
+
+                const message = new Message({
+                    user: responseMessage._id,
+                    message: responseMessage.message,
+                });
+                await message.save();
+                const result = await Message.findById(message._id).populate({path: 'user', select: 'displayName'});
                 Object.keys(activeConnections).forEach(id => {
                     const conn = activeConnections[id];
                     conn.send(JSON.stringify({
                         type: 'SEND_MESSAGES',
-                        payload: [responseMessage]
+                        payload: [result]
                     }));
                 });
                 break;
             case 'MODERATOR_CLEAR':
-                messagesState = []
+                await db.dropCollection('messages');
                 Object.keys(activeConnections).forEach(id => {
                     const conn = activeConnections[id];
                     conn.send(JSON.stringify({
                         type: 'CLEAR_MESSAGES',
-                        payload: messagesState
+                        payload: []
                     }));
                 });
                 break;

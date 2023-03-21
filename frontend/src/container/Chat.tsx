@@ -2,11 +2,11 @@ import React, {useState} from 'react';
 import {Button, Container, Grid, TextField, Typography} from "@mui/material";
 import {useAppSelector} from "../app/hook";
 import {selectUser} from "../features/users/usersSlice";
-import {Message, Online} from "../types";
+import {Message, MessageMutation, Online} from "../types";
 
 interface Props {
     userOnline: Online[];
-    onSubmit: (message: Message) => void;
+    onSubmit: (message: MessageMutation) => void;
     messages: Message[];
     moderatorSubmit: () => void;
 }
@@ -25,7 +25,6 @@ const Chat: React.FC<Props> = ({userOnline, onSubmit, messages, moderatorSubmit}
         if (user) {
             onSubmit({
                 _id: user._id,
-                displayName: user.displayName,
                 message: state,
             });
         }
@@ -50,7 +49,7 @@ const Chat: React.FC<Props> = ({userOnline, onSubmit, messages, moderatorSubmit}
                         <Grid item height={380} overflow='auto'>
                             {messages.map(item => (
                                 <Typography key={Math.random()*9999}>
-                                    <b>{item.displayName}:</b> {item.message}
+                                    <b>{item.user.displayName}:</b> {item.message}
                                 </Typography>
                             ))}
                         </Grid>

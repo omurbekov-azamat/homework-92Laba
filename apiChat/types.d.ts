@@ -1,4 +1,5 @@
 import {WebSocket} from 'ws';
+import {ObjectId} from "mongoose";
 
 export interface IUser {
     username: string;
@@ -16,7 +17,6 @@ export interface ActiveConnections {
 
 export interface UserMessage {
     _id: string;
-    displayName: string;
     message: string;
 }
 
@@ -28,4 +28,9 @@ export interface ISession {
 export interface IncomingMessage {
     type: string;
     payload: IUser | UserMessage | ISession | string;
+}
+
+export interface IMessage {
+    user: ObjectId;
+    message: string;
 }
