@@ -2,16 +2,16 @@ import React, {useState} from 'react';
 import {Button, Container, Grid, TextField, Typography} from "@mui/material";
 import {useAppSelector} from "../app/hook";
 import {selectUser} from "../features/users/usersSlice";
-import {Message, MessageMutation, Online} from "../types";
+import {websocketSend} from "../helpers";
+import {Message, Online} from "../types";
 
 interface Props {
     userOnline: Online[];
-    onSubmit: (message: MessageMutation) => void;
     messages: Message[];
-    moderatorSubmit: () => void;
+    ws: React.MutableRefObject<WebSocket | null>
 }
 
-const Chat: React.FC<Props> = ({userOnline, onSubmit, messages, moderatorSubmit}) => {
+const Chat: React.FC<Props> = ({userOnline, messages, ws}) => {
     const [state, setState] = useState('');
     const user = useAppSelector(selectUser);
 
@@ -23,12 +23,13 @@ const Chat: React.FC<Props> = ({userOnline, onSubmit, messages, moderatorSubmit}
         e.preventDefault();
 
         if (user) {
-            onSubmit({
-                _id: user._id,
-                message: state,
-            });
+            websocketSend(ws, 'SEND_MESSAGE', {_id: user._id, message: state});
         }
         await setState('');
+    };
+
+    const clickModerator = () => {
+        websocketSend(ws, 'MODERATOR_CLEAR', 'CLEAR')
     };
 
     return (
@@ -80,7 +81,7 @@ const Chat: React.FC<Props> = ({userOnline, onSubmit, messages, moderatorSubmit}
                                                 type='button'
                                                 color='primary'
                                                 variant='outlined'
-                                                onClick={moderatorSubmit}
+                                                onClick={clickModerator}
                                             >
                                                 clear
                                             </Button>

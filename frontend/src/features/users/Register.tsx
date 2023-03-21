@@ -51,7 +51,7 @@ const Register= () => {
                 <Typography component="h1" variant="h5">
                     Sign up
                 </Typography>
-                <Box component="form" noValidate onSubmit={submitFormHandler} sx={{mt: 3}}>
+                <Box component="form" onSubmit={submitFormHandler} sx={{mt: 3}}>
                     <Grid container spacing={2} textAlign='center'>
                         <Grid item xs={12}>
                             <TextField
@@ -62,6 +62,7 @@ const Register= () => {
                                 onChange={inputChangeHandler}
                                 error={Boolean(getFieldError('username'))}
                                 helperText={getFieldError('username')}
+                                required
                             />
                         </Grid>
                         <Grid item xs={12}>
@@ -74,6 +75,7 @@ const Register= () => {
                                 onChange={inputChangeHandler}
                                 error={Boolean(getFieldError('password'))}
                                 helperText={getFieldError('password')}
+                                required
                             />
                         </Grid>
                         <Grid item xs={12}>
@@ -86,6 +88,7 @@ const Register= () => {
                                 onChange={inputChangeHandler}
                                 error={Boolean(getFieldError('displayName'))}
                                 helperText={getFieldError('displayName')}
+                                required
                             />
                         </Grid>
                         <Grid item xs={12}>

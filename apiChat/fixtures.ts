@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 import config from "./config";
 import crypto from "crypto";
 import User from "./modules/User";
+import Message from "./modules/Message";
 
 const run = async () => {
     mongoose.set('strictQuery', false);
@@ -10,16 +11,30 @@ const run = async () => {
 
     try {
         await db.dropCollection('users');
+        await db.dropCollection('messages');
     } catch (e) {
         console.log('Collections were not present, skipping drop...');
     }
 
-    await User.create({
+    const [moderator, user] = await User.create({
         username: 'moderator',
         password: '123',
         displayName: 'Moderator',
         role: 'moderator',
         token: crypto.randomUUID(),
+    }, {
+        username: 'user',
+        password: '123',
+        displayName: 'user',
+        token: crypto.randomUUID(),
+    });
+
+    await Message.create({
+        user: moderator._id,
+        message: 'Hi, im Moderator',
+    }, {
+        user: user._id,
+        message: 'Hi Moderator, im User',
     });
 
     await db.close();

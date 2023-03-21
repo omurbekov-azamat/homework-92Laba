@@ -79,7 +79,7 @@ router.ws('/chat', (ws) => {
                         user.generateToken();
                         await user.save();
                         conn.send(JSON.stringify({
-                            type: 'USERNAME_PASSWORD CORRECT',
+                            type: 'USERNAME_PASSWORD_CORRECT',
                             payload: user,
                         }));
                     }
