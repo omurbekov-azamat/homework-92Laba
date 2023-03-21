@@ -19,7 +19,7 @@ expressWs(app);
 const router = express.Router();
 const activeConnections: ActiveConnections = {};
 
-const messagesState: UserMessage[] = [];
+let messagesState: UserMessage[] = [];
 
 router.ws('/chat', (ws) => {
     const id = crypto.randomUUID();
@@ -186,6 +186,16 @@ router.ws('/chat', (ws) => {
                     conn.send(JSON.stringify({
                         type: 'SEND_MESSAGES',
                         payload: [responseMessage]
+                    }));
+                });
+                break;
+            case 'MODERATOR_CLEAR':
+                messagesState = []
+                Object.keys(activeConnections).forEach(id => {
+                    const conn = activeConnections[id];
+                    conn.send(JSON.stringify({
+                        type: 'CLEAR_MESSAGES',
+                        payload: messagesState
                     }));
                 });
                 break;

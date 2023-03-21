@@ -1,17 +1,19 @@
 import React, {useState} from 'react';
 import {Button, Container, Grid, TextField, Typography} from "@mui/material";
+import {useAppSelector} from "../app/hook";
+import {selectUser} from "../features/users/usersSlice";
 import {Message, Online} from "../types";
 
 interface Props {
     userOnline: Online[];
     onSubmit: (message: Message) => void;
-    id: string;
-    displayName: string;
     messages: Message[];
+    moderatorSubmit: () => void;
 }
 
-const Chat: React.FC<Props> = ({userOnline, onSubmit, id, displayName, messages}) => {
+const Chat: React.FC<Props> = ({userOnline, onSubmit, messages, moderatorSubmit}) => {
     const [state, setState] = useState('');
+    const user = useAppSelector(selectUser);
 
     const inputChangeHandler = (e: React.ChangeEvent<HTMLInputElement>) => {
         setState(e.target.value);
@@ -20,11 +22,13 @@ const Chat: React.FC<Props> = ({userOnline, onSubmit, id, displayName, messages}
     const submitFormHandler = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        onSubmit({
-            _id: id,
-            displayName,
-            message: state,
-        });
+        if (user) {
+            onSubmit({
+                _id: user._id,
+                displayName: user.displayName,
+                message: state,
+            });
+        }
         await setState('');
     };
 
@@ -43,7 +47,7 @@ const Chat: React.FC<Props> = ({userOnline, onSubmit, id, displayName, messages}
                 </Grid>
                 <Grid item xs={10} border={1}>
                     <Grid container direction='column' justifyContent='space-around'>
-                        <Grid item height={422} overflow='auto'>
+                        <Grid item height={380} overflow='auto'>
                             {messages.map(item => (
                                 <Typography key={Math.random()*9999}>
                                     <b>{item.displayName}:</b> {item.message}
@@ -70,6 +74,18 @@ const Chat: React.FC<Props> = ({userOnline, onSubmit, id, displayName, messages}
                                         >
                                             Send
                                         </Button>
+                                    </Grid>
+                                    <Grid item xs>
+                                        {user && user.role === 'moderator' &&
+                                            <Button
+                                                type='button'
+                                                color='primary'
+                                                variant='outlined'
+                                                onClick={moderatorSubmit}
+                                            >
+                                                clear
+                                            </Button>
+                                        }
                                     </Grid>
                                 </Grid>
                             </form>

@@ -3,7 +3,7 @@ import {useNavigate} from "react-router-dom";
 import {useAppDispatch, useAppSelector} from "../app/hook";
 import {
     catchLoginError, catchRegisterError,
-    register, selectToken, selectUser,
+    register, selectGoogleUser, selectToken, selectUser,
     selectUserLoginMutation,
     selectUserRegisterMutation
 } from "../features/users/usersSlice";
@@ -19,6 +19,7 @@ const Home = () => {
     const token = useAppSelector(selectToken);
     const navigate = useNavigate();
     const user = useAppSelector(selectUser);
+    const googleUser = useAppSelector(selectGoogleUser);
 
     const [state, setState] = useState<Online[]>([]);
     const [messages, setMessages] = useState<Message[]>([]);
@@ -66,6 +67,10 @@ const Home = () => {
                 const messages = decodedMessage.payload as Message[];
                 setMessages(prev => (prev.concat(messages)));
             }
+            if (decodedMessage.type === 'CLEAR_MESSAGES') {
+                const messages = decodedMessage.payload as Message[];
+                setMessages(messages);
+            }
         }
 
         return () => {
@@ -99,7 +104,15 @@ const Home = () => {
                 payload: token
             }));
         }
-    }, [registerState, loginState, token]);
+        if (googleUser) {
+            if (!ws.current) return;
+
+            ws.current?.send(JSON.stringify({
+                type: 'LOGIN',
+                payload: googleUser
+            }));
+        }
+    }, [registerState, loginState, token, googleUser]);
 
     const onSubmit = (message: Message) => {
         if (!ws.current) return;
@@ -109,11 +122,25 @@ const Home = () => {
         }));
     };
 
+    const clickModerator = () => {
+        if (!ws.current) return;
+
+        ws.current.send(JSON.stringify({
+            type: 'MODERATOR_CLEAR',
+            payload: 'CLEAR'
+        }));
+    };
+
     return (
         <>
             <AppToolbar/>
             <ModalCover/>
-            {user && <Chat userOnline={state} onSubmit={onSubmit} id={user._id} displayName={user.displayName} messages={messages}/>}
+            {user && <Chat
+                userOnline={state}
+                onSubmit={onSubmit}
+                messages={messages}
+                moderatorSubmit={clickModerator}
+            />}
         </>
 
     );
