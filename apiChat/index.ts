@@ -1,13 +1,13 @@
 import cors from 'cors';
 import express from "express";
-import mongoose, {Error} from "mongoose";
+import mongoose from "mongoose";
 import crypto from "crypto";
 import config from "./config";
-import usersRouter from "./routers/users";
+import usersRouter, {registerUser, sessionUser} from "./routers/users";
 import expressWs from "express-ws";
 import User from "./modules/User";
-import {ActiveConnections, IncomingMessage, ISession, IUser, UserMessage} from "./types";
 import Message from "./modules/Message";
+import {ActiveConnections, IncomingMessage, UserMessage} from "./types";
 
 const app = express();
 const port = 8000;
@@ -31,59 +31,10 @@ router.ws('/chat', (ws) => {
         const conn = activeConnections[id];
         switch (decodeMessage.type) {
             case 'REGISTER':
-                const register = decodeMessage.payload as IUser;
-                try {
-                    const user = await User.create({
-                        username: register.username,
-                        password: register.password,
-                        displayName: register.displayName,
-                        token: crypto.randomUUID(),
-                    });
-                    conn.send(JSON.stringify({
-                        type: 'NEW_USER',
-                        payload: user,
-                    }));
-                } catch (error) {
-                    if (error instanceof Error.ValidationError) {
-                        conn.send(JSON.stringify({
-                            type: 'VALIDATION_ERROR',
-                            payload: error,
-                        }));
-                    }
-                }
+                void registerUser(activeConnections[id], decodeMessage);
                 break;
             case 'SESSIONS':
-                const session = decodeMessage.payload as ISession;
-                const user = await User.findOne({username: session.username});
-                if (!user) {
-                    conn.send(JSON.stringify({
-                        type: 'USERNAME_NOT_FOUND',
-                        payload: 'Username is not found',
-                    }));
-                }
-
-                if (user) {
-                    const isMatch = await user.checkPassword(session.password);
-
-                    if (!isMatch) {
-                        conn.send(JSON.stringify({
-                            type: 'PASSWORD_IS_WRONG',
-                            payload: {
-                                message: 'Something wrong!',
-                                data: 'Password is wrong',
-                            },
-                        }));
-                    }
-
-                    if (isMatch) {
-                        user.generateToken();
-                        await user.save();
-                        conn.send(JSON.stringify({
-                            type: 'USERNAME_PASSWORD_CORRECT',
-                            payload: user,
-                        }));
-                    }
-                }
+                void sessionUser(activeConnections[id], decodeMessage);
                 break;
             case 'LOGOUT':
                 const token = decodeMessage.payload as string;
@@ -162,7 +113,10 @@ router.ws('/chat', (ws) => {
                         }
 
                         if (users) {
-                            const messagesData = await Message.find().populate({path: 'user', select: 'displayName'}).limit(30);
+                            const messagesData = await Message.find().populate({
+                                path: 'user',
+                                select: 'displayName'
+                            }).limit(30);
                             Object.keys(activeConnections).forEach(id => {
                                 const conn = activeConnections[id];
                                 conn.send(JSON.stringify({
@@ -201,7 +155,7 @@ router.ws('/chat', (ws) => {
                     const conn = activeConnections[id];
                     conn.send(JSON.stringify({
                         type: 'CLEAR_MESSAGES',
-                        payload: []
+                        payload: [],
                     }));
                 });
                 break;
